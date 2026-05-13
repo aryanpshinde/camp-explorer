@@ -3,11 +3,12 @@ const path = require("path");
 const mongoose = require("mongoose");
 const ejsMate = require("ejs-mate");
 const methodOverride = require("method-override");
-const Campground = require("./models/campground");
+const Campground = require("./models/campgrounds");
 
 // --- NEW IMPORTS ---
-const { campgroundSchema } = require("./schemas.js");
+const { campgroundSchema, reviewSchema } = require("./schemas.js"); // Added reviewSchema
 const ExpressError = require("./utils/ExpressError");
+const Review = require("./models/reviews"); // Added Review model
 
 const db_uri = "mongodb://127.0.0.1:27017/yelp-camp";
 mongoose.connect(db_uri);
@@ -42,6 +43,17 @@ const validateCampground = (req, res, next) => {
   }
 };
 
+// Validates incoming review data against the Joi reviewSchema
+const validateReview = (req, res, next) => {
+  const { error } = reviewSchema.validate(req.body);
+  if (error) {
+    const msg = error.details.map((el) => el.message).join(",");
+    throw new ExpressError(msg, 400);
+  } else {
+    next();
+  }
+};
+
 // --- ROUTES ---
 
 app.get("/", (req, res) => {
@@ -68,7 +80,10 @@ app.post("/campgrounds", validateCampground, async (req, res) => {
 
 // SHOW
 app.get("/campgrounds/:id", async (req, res) => {
-  const campground = await Campground.findById(req.params.id);
+  // Populates the reviews array with the actual Review documents
+  const campground = await Campground.findById(req.params.id).populate(
+    "reviews",
+  );
   res.render("campgrounds/show", { campground });
 });
 
@@ -92,6 +107,32 @@ app.delete("/campgrounds/:id", async (req, res) => {
   const { id } = req.params;
   await Campground.findByIdAndDelete(id);
   res.redirect("/campgrounds");
+});
+
+// --- NESTED REVIEW ROUTES ---
+
+// CREATE REVIEW
+app.post("/campgrounds/:id/reviews", validateReview, async (req, res) => {
+  const campground = await Campground.findById(req.params.id);
+  const review = new Review(req.body.review);
+
+  campground.reviews.push(review);
+
+  await review.save();
+  await campground.save();
+
+  res.redirect(`/campgrounds/${campground._id}`);
+});
+
+// DELETE REVIEW
+app.delete("/campgrounds/:id/reviews/:reviewId", async (req, res) => {
+  const { id, reviewId } = req.params;
+
+  // $pull removes the specific review ID from the campground's reviews array
+  await Campground.findByIdAndUpdate(id, { $pull: { reviews: reviewId } });
+  await Review.findByIdAndDelete(reviewId);
+
+  res.redirect(`/campgrounds/${id}`);
 });
 
 // --- NEW ERROR HANDLING LOGIC ---
