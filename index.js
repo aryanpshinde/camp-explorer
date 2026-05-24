@@ -2,13 +2,13 @@ const express = require("express");
 const path = require("path");
 const mongoose = require("mongoose");
 const ejsMate = require("ejs-mate");
-const methodOverride = require("method-override");
-const Campground = require("./models/campgrounds");
-
-// --- NEW IMPORTS ---
-const { campgroundSchema, reviewSchema } = require("./schemas.js"); // Added reviewSchema
+const session = require("express-session");
+const flash = require("connect-flash");
 const ExpressError = require("./utils/ExpressError");
-const Review = require("./models/reviews"); // Added Review model
+const methodOverride = require("method-override");
+
+const campgroundRoutes = require("./routes/campgrounds");
+const reviewRoutes = require("./routes/reviews");
 
 const db_uri = "mongodb://127.0.0.1:27017/yelp-camp";
 mongoose.connect(db_uri);
@@ -25,128 +25,45 @@ app.engine("ejs", ejsMate);
 app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
 
-// Middleware to parse form data and fake PUT/DELETE requests
 app.use(express.urlencoded({ extended: true }));
 app.use(methodOverride("_method"));
+app.use(express.static(path.join(__dirname, "public")));
 
-// --- NEW VALIDATION MIDDLEWARE ---
-// Intercepts the request and checks it against our Joi schema
-const validateCampground = (req, res, next) => {
-  const { error } = campgroundSchema.validate(req.body);
-  if (error) {
-    // Map over Joi's error details array to create a single comma-separated string
-    const msg = error.details.map((el) => el.message).join(",");
-    // Express 5 will natively catch this thrown error and send it down to the generic handler!
-    throw new ExpressError(msg, 400);
-  } else {
-    next();
-  }
+const sessionConfig = {
+  secret: "thisshouldbeabettersecret!",
+  resave: false,
+  saveUninitialized: true,
+  cookie: {
+    httpOnly: true,
+    expires: Date.now() + 1000 * 60 * 60 * 24 * 7,
+    maxAge: 1000 * 60 * 60 * 24 * 7,
+  },
 };
+app.use(session(sessionConfig));
+app.use(flash());
 
-// Validates incoming review data against the Joi reviewSchema
-const validateReview = (req, res, next) => {
-  const { error } = reviewSchema.validate(req.body);
-  if (error) {
-    const msg = error.details.map((el) => el.message).join(",");
-    throw new ExpressError(msg, 400);
-  } else {
-    next();
-  }
-};
+// Global Middleware for Flash Messages
+app.use((req, res, next) => {
+  res.locals.success = req.flash("success");
+  res.locals.error = req.flash("error");
+  next();
+});
 
-// --- ROUTES ---
+// Route Handlers
+app.use("/campgrounds", campgroundRoutes);
+app.use("/campgrounds/:id/reviews", reviewRoutes);
 
 app.get("/", (req, res) => {
   res.render("home");
 });
 
-// INDEX
-app.get("/campgrounds", async (req, res) => {
-  const campgrounds = await Campground.find({});
-  res.render("campgrounds/index", { campgrounds });
-});
-
-// NEW
-app.get("/campgrounds/new", (req, res) => {
-  res.render("campgrounds/new");
-});
-
-// CREATE (Protected with validateCampground)
-app.post("/campgrounds", validateCampground, async (req, res) => {
-  const campground = new Campground(req.body.campground);
-  await campground.save();
-  res.redirect(`/campgrounds/${campground._id}`);
-});
-
-// SHOW
-app.get("/campgrounds/:id", async (req, res) => {
-  // Populates the reviews array with the actual Review documents
-  const campground = await Campground.findById(req.params.id).populate(
-    "reviews",
-  );
-  res.render("campgrounds/show", { campground });
-});
-
-// EDIT
-app.get("/campgrounds/:id/edit", async (req, res) => {
-  const campground = await Campground.findById(req.params.id);
-  res.render("campgrounds/edit", { campground });
-});
-
-// UPDATE (Protected with validateCampground)
-app.put("/campgrounds/:id", validateCampground, async (req, res) => {
-  const { id } = req.params;
-  const campground = await Campground.findByIdAndUpdate(id, {
-    ...req.body.campground,
-  });
-  res.redirect(`/campgrounds/${campground._id}`);
-});
-
-// DELETE
-app.delete("/campgrounds/:id", async (req, res) => {
-  const { id } = req.params;
-  await Campground.findByIdAndDelete(id);
-  res.redirect("/campgrounds");
-});
-
-// --- NESTED REVIEW ROUTES ---
-
-// CREATE REVIEW
-app.post("/campgrounds/:id/reviews", validateReview, async (req, res) => {
-  const campground = await Campground.findById(req.params.id);
-  const review = new Review(req.body.review);
-
-  campground.reviews.push(review);
-
-  await review.save();
-  await campground.save();
-
-  res.redirect(`/campgrounds/${campground._id}`);
-});
-
-// DELETE REVIEW
-app.delete("/campgrounds/:id/reviews/:reviewId", async (req, res) => {
-  const { id, reviewId } = req.params;
-
-  // $pull removes the specific review ID from the campground's reviews array
-  await Campground.findByIdAndUpdate(id, { $pull: { reviews: reviewId } });
-  await Review.findByIdAndDelete(reviewId);
-
-  res.redirect(`/campgrounds/${id}`);
-});
-
-// --- NEW ERROR HANDLING LOGIC ---
-
-// 404 Catch-All (Using the safe path-to-regexp syntax)
 app.all("/{*path}", (req, res, next) => {
   next(new ExpressError("Page Not Found", 404));
 });
 
-// Generic Error Handler (Renders the custom error template)
 app.use((err, req, res, next) => {
   const { statusCode = 500 } = err;
   if (!err.message) err.message = "Oh No, Something Went Wrong!";
-
   res.status(statusCode).render("error", { err });
 });
 
