@@ -1,20 +1,14 @@
 const express = require("express");
 const router = express.Router();
 const Campground = require("../models/campgrounds");
-const { campgroundSchema } = require("../schemas.js");
-const ExpressError = require("../utils/ExpressError");
-const { isLoggedIn } = require("../middleware"); // Import your bouncer
+// Updated destructuring to import the explicitly named isCampgroundAuthor guard
+const {
+  isLoggedIn,
+  isCampgroundAuthor,
+  validateCampground,
+} = require("../middleware");
 
-const validateCampground = (req, res, next) => {
-  const { error } = campgroundSchema.validate(req.body);
-  if (error) {
-    const msg = error.details.map((el) => el.message).join(",");
-    throw new ExpressError(msg, 400);
-  } else {
-    next();
-  }
-};
-
+// Index Route: Renders all campgrounds
 router.get("/", async (req, res) => {
   const campgrounds = await Campground.find({});
   res.render("campgrounds/index", { campgrounds });
@@ -25,18 +19,26 @@ router.get("/new", isLoggedIn, (req, res) => {
   res.render("campgrounds/new");
 });
 
-// Protected Creation Operation
+// Protected Creation Operation: Automatically binds authenticated user as the document author
 router.post("/", isLoggedIn, validateCampground, async (req, res) => {
   const campground = new Campground(req.body.campground);
+  campground.author = req.user._id; // Attach active user session footprint to resource
   await campground.save();
   req.flash("success", "Successfully made a new campground!");
   res.redirect(`/campgrounds/${campground._id}`);
 });
 
+// Show Route: Deep nest populates the review array AND each review's respective author object
 router.get("/:id", async (req, res) => {
-  const campground = await Campground.findById(req.params.id).populate(
-    "reviews",
-  );
+  const campground = await Campground.findById(req.params.id)
+    .populate({
+      path: "reviews",
+      populate: {
+        path: "author", // Populate the author of each individual review
+      },
+    })
+    .populate("author"); // Populate the standalone author of the main campground
+
   if (!campground) {
     req.flash("error", "Cannot find that campground!");
     return res.redirect("/campgrounds");
@@ -44,9 +46,10 @@ router.get("/:id", async (req, res) => {
   res.render("campgrounds/show", { campground });
 });
 
-// Protected Edit Form Render
-router.get("/:id/edit", isLoggedIn, async (req, res) => {
-  const campground = await Campground.findById(req.params.id);
+// Protected Edit Form Render: Guarded via active login session and resource authorization validation
+router.get("/:id/edit", isLoggedIn, isCampgroundAuthor, async (req, res) => {
+  const { id } = req.params;
+  const campground = await Campground.findById(id);
   if (!campground) {
     req.flash("error", "Cannot find that campground!");
     return res.redirect("/campgrounds");
@@ -54,18 +57,24 @@ router.get("/:id/edit", isLoggedIn, async (req, res) => {
   res.render("campgrounds/edit", { campground });
 });
 
-// Protected Update Execution
-router.put("/:id", isLoggedIn, validateCampground, async (req, res) => {
-  const { id } = req.params;
-  const campground = await Campground.findByIdAndUpdate(id, {
-    ...req.body.campground,
-  });
-  req.flash("success", "Successfully updated campground!");
-  res.redirect(`/campgrounds/${campground._id}`);
-});
+// Protected Update Execution: Guarded via active login session and resource authorization validation
+router.put(
+  "/:id",
+  isLoggedIn,
+  isCampgroundAuthor,
+  validateCampground,
+  async (req, res) => {
+    const { id } = req.params;
+    const campground = await Campground.findByIdAndUpdate(id, {
+      ...req.body.campground,
+    });
+    req.flash("success", "Successfully updated campground!");
+    res.redirect(`/campgrounds/${campground._id}`);
+  },
+);
 
-// Protected Delete Execution
-router.delete("/:id", isLoggedIn, async (req, res) => {
+// Protected Delete Execution: Guarded via active login session and resource authorization validation
+router.delete("/:id", isLoggedIn, isCampgroundAuthor, async (req, res) => {
   const { id } = req.params;
   await Campground.findByIdAndDelete(id);
   req.flash("success", "Successfully deleted campground");

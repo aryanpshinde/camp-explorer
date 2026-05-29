@@ -1,23 +1,15 @@
 const express = require("express");
+// mergeParams ensures parent route structural IDs (e.g., :id) are accessible inside this nested router extension
 const router = express.Router({ mergeParams: true });
 const Campground = require("../models/campgrounds");
 const Review = require("../models/reviews");
-const { reviewSchema } = require("../schemas.js");
-const ExpressError = require("../utils/ExpressError");
+const { validateReview, isLoggedIn, isReviewAuthor } = require("../middleware");
 
-const validateReview = (req, res, next) => {
-  const { error } = reviewSchema.validate(req.body);
-  if (error) {
-    const msg = error.details.map((el) => el.message).join(",");
-    throw new ExpressError(msg, 400);
-  } else {
-    next();
-  }
-};
-
-router.post("/", validateReview, async (req, res) => {
+// Protected Review Creation: Automatically attaches session account identity to submitted comments
+router.post("/", isLoggedIn, validateReview, async (req, res) => {
   const campground = await Campground.findById(req.params.id);
   const review = new Review(req.body.review);
+  review.author = req.user._id; // Attach active session ID as review writer
   campground.reviews.push(review);
   await review.save();
   await campground.save();
@@ -25,8 +17,10 @@ router.post("/", validateReview, async (req, res) => {
   res.redirect(`/campgrounds/${campground._id}`);
 });
 
-router.delete("/:reviewId", async (req, res) => {
+// Protected Review Destruction: Fully guarded against cross-site automated endpoint attacks
+router.delete("/:reviewId", isLoggedIn, isReviewAuthor, async (req, res) => {
   const { id, reviewId } = req.params;
+  // Use Mongoose $pull atomic operation to purge the target object identifier from the parent collection array
   await Campground.findByIdAndUpdate(id, { $pull: { reviews: reviewId } });
   await Review.findByIdAndDelete(reviewId);
   req.flash("success", "Successfully deleted review");

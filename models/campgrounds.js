@@ -8,6 +8,11 @@ const CampgroundSchema = new Schema({
   price: Number,
   description: String,
   location: String,
+  // 1-to-N Relationship: Links campgrounds to their specific creator
+  author: {
+    type: Schema.Types.ObjectId,
+    ref: "User",
+  },
   // 1-to-N relationship. Stores ObjectIDs to keep the parent document within MongoDB's 16MB limit.
   reviews: [
     {
