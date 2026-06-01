@@ -14,6 +14,10 @@ module.exports.renderNewForm = (req, res) => {
 // POST /campgrounds - Saves newly generated campground into database
 module.exports.createCampground = async (req, res) => {
   const campground = new Campground(req.body.campground);
+  campground.images = req.files.map((f) => ({
+    url: f.path,
+    filename: f.filename,
+  }));
   campground.author = req.user._id; // Bind logged-in session account as author
   await campground.save();
   req.flash("success", "Successfully made a new campground!");

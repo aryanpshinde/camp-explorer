@@ -6,12 +6,20 @@ const {
   isCampgroundAuthor,
   validateCampground,
 } = require("../middleware");
+const multer = require("multer");
+const { storage } = require("../cloudinary");
+const upload = multer({ storage });
 
 // Grouping endpoints targeted at the root endpoint collection path ('/')
 router
   .route("/")
   .get(campgrounds.index)
-  .post(isLoggedIn, validateCampground, campgrounds.createCampground);
+  .post(
+    isLoggedIn,
+    upload.array("campground[image]"),
+    validateCampground,
+    campgrounds.createCampground,
+  );
 
 // Dedicated layout retrieval path (Must reside above route parameters to bypass validation overlaps)
 router.get("/new", isLoggedIn, campgrounds.renderNewForm);

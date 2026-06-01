@@ -4,7 +4,12 @@ const Schema = mongoose.Schema;
 
 const CampgroundSchema = new Schema({
   title: String,
-  image: String,
+  images: [
+    {
+      url: String,
+      filename: String,
+    },
+  ],
   price: Number,
   description: String,
   location: String,
@@ -23,11 +28,8 @@ const CampgroundSchema = new Schema({
 });
 
 // Query Middleware: Cascading Delete
-// Hooked to 'findOneAndDelete' to intercept `findByIdAndDelete` calls in app.js
-// Uses 'post' to access the document *after* the query executes, ensuring we have the target's reviews array
 CampgroundSchema.post("findOneAndDelete", async function (doc) {
   if (doc) {
-    // Purges any Review document whose ID was stored in the deleted Campground's array
     await Review.deleteMany({
       _id: {
         $in: doc.reviews,
