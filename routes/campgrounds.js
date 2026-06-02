@@ -31,6 +31,7 @@ router
   .put(
     isLoggedIn,
     isCampgroundAuthor,
+    upload.array("campground[image]"),
     validateCampground,
     campgrounds.updateCampground,
   )
