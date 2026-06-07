@@ -19,6 +19,7 @@
   },
   "homepage": "https://github.com/aryanpshinde/camp-explorer#readme",
   "dependencies": {
+    "@maptiler/client": "^3.0.2",
     "cloudinary": "^1.41.3",
     "connect-flash": "^0.1.1",
     "dotenv": "^17.4.2",
