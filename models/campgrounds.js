@@ -11,35 +11,46 @@ ImageSchema.virtual("thumbnail").get(function () {
   return this.url.replace("/upload", "/upload/w_200");
 });
 
-const CampgroundSchema = new Schema({
-  title: String,
-  images: [ImageSchema],
-  price: Number,
-  description: String,
-  location: String,
-  geometry: {
-    type: {
-      type: String,
-      enum: ["Point"],
-      required: true,
+const opts = { toJSON: { virtuals: true } };
+
+const CampgroundSchema = new Schema(
+  {
+    title: String,
+    images: [ImageSchema],
+    price: Number,
+    description: String,
+    location: String,
+    geometry: {
+      type: {
+        type: String,
+        enum: ["Point"],
+        required: true,
+      },
+      coordinates: {
+        type: [Number],
+        required: true,
+      },
     },
-    coordinates: {
-      type: [Number],
-      required: true,
-    },
-  },
-  // 1-to-N Relationship: Links campgrounds to their specific creator
-  author: {
-    type: Schema.Types.ObjectId,
-    ref: "User",
-  },
-  // 1-to-N relationship. Stores ObjectIDs to keep the parent document within MongoDB's 16MB limit.
-  reviews: [
-    {
+    // 1-to-N Relationship: Links campgrounds to their specific creator
+    author: {
       type: Schema.Types.ObjectId,
-      ref: "Review",
+      ref: "User",
     },
-  ],
+    // 1-to-N relationship. Stores ObjectIDs to keep the parent document within MongoDB's 16MB limit.
+    reviews: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: "Review",
+      },
+    ],
+  },
+  opts,
+);
+
+CampgroundSchema.virtual("properties.popUpMarkup").get(function () {
+  return `
+    <strong><a href="/campgrounds/${this._id}">${this.title}</a></strong>
+    <p>${this.description.substring(0, 20)}...</p>`;
 });
 
 // Query Middleware: Cascading Delete
