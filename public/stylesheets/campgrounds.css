@@ -1,0 +1,33 @@
+#map {
+  width: 100%;
+  height: 450px;
+}
+
+/* Index Page Cards */
+.campground-card {
+  transition:
+    transform 0.3s ease,
+    box-shadow 0.3s ease;
+  overflow: hidden;
+}
+
+.campground-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1) !important;
+}
+
+.campground-card .card-img-top {
+  height: 220px;
+  object-fit: cover;
+}
+
+/* Show Page Carousel */
+#campgroundCarousel .carousel-item img {
+  height: 450px;
+  object-fit: cover;
+}
+
+/* Starability tweaks for better spacing */
+.starability-grow {
+  margin-bottom: 1rem;
+}

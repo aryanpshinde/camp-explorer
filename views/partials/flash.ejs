@@ -1,6 +1,12 @@
 <% if(success && success.length) { %>
-<div class="alert alert-success alert-dismissible fade show" role="alert">
-  <%= success %>
+<div
+  class="alert alert-success alert-dismissible fade show rounded-3 shadow-sm border-0"
+  role="alert"
+>
+  <div class="d-flex align-items-center">
+    <i class="bi bi-check-circle-fill me-2 fs-5"></i>
+    <span class="fw-semibold"><%= success %></span>
+  </div>
   <button
     type="button"
     class="btn-close"
@@ -9,8 +15,14 @@
   ></button>
 </div>
 <% } %> <% if(error && error.length) { %>
-<div class="alert alert-danger alert-dismissible fade show" role="alert">
-  <%= error %>
+<div
+  class="alert alert-danger alert-dismissible fade show rounded-3 shadow-sm border-0"
+  role="alert"
+>
+  <div class="d-flex align-items-center">
+    <i class="bi bi-exclamation-triangle-fill me-2 fs-5"></i>
+    <span class="fw-semibold"><%= error %></span>
+  </div>
   <button
     type="button"
     class="btn-close"

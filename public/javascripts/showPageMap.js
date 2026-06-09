@@ -1,16 +1,24 @@
-// 1. Set the API key
-maptilersdk.config.apiKey = maptilerApiKey;
-
-// 2. Initialize the map using the new 'coordinates' variable
+// Initialize map with Outdoor style and encapsulated API key
 const map = new maptilersdk.Map({
   container: "map",
-  style: maptilersdk.MapStyle.BRIGHT,
+  style: maptilersdk.MapStyle.OUTDOOR,
+  apiKey: maptilerApiKey,
   center: coordinates,
   zoom: 10,
 });
 
-// 3. Add the marker using the new variables
-new maptilersdk.Marker()
+// Add a custom green marker that matches your Bootstrap theme
+new maptilersdk.Marker({ color: "#198754", scale: 1.2 })
   .setLngLat(coordinates)
-  .setPopup(new maptilersdk.Popup({ offset: 25 }).setHTML(`<h3>${title}</h3>`))
+  .setPopup(
+    new maptilersdk.Popup({
+      offset: 25,
+      className: "campground-popup",
+    }).setHTML(
+      `<div class="p-2">
+         <h5 class="mb-1 fw-bold">${title}</h5>
+         <small class="text-muted">Campground Location</small>
+       </div>`,
+    ),
+  )
   .addTo(map);

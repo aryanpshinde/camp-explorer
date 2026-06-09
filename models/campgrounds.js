@@ -49,8 +49,14 @@ const CampgroundSchema = new Schema(
 
 CampgroundSchema.virtual("properties.popUpMarkup").get(function () {
   return `
-    <strong><a href="/campgrounds/${this._id}">${this.title}</a></strong>
-    <p>${this.description.substring(0, 20)}...</p>`;
+    <div class="p-2" style="min-width: 150px;">
+      <strong class="d-block mb-1">
+        <a href="/campgrounds/${this._id}" class="text-decoration-none text-dark">
+          ${this.title}
+        </a>
+      </strong>
+      <small class="text-muted d-block">${this.description.substring(0, 40)}...</small>
+    </div>`;
 });
 
 // Query Middleware: Cascading Delete

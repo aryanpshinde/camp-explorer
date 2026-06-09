@@ -1,33 +1,119 @@
-<% layout('layouts/boilerplate')%>
+<% layout('layouts/boilerplate') %>
+<link
+  rel="stylesheet"
+  href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
+/>
+<link rel="stylesheet" href="/stylesheets/auth.css" />
 
-<h1>Register</h1>
-<form action="/register" method="POST" class="validated-form" novalidate>
-  <div class="mb-3">
-    <label class="form-label" for="username">Username</label>
-    <input
-      class="form-control"
-      type="text"
-      id="username"
-      name="username"
-      required
-    />
-    <div class="valid-feedback">Looks good!</div>
+<div class="auth-container">
+  <div class="card auth-card shadow-lg border-0" data-bs-theme="dark">
+    <div class="auth-image-wrapper">
+      <img
+        src="https://images.unsplash.com/photo-1571863533956-01c88e79957e?auto=format&fit=crop&w=1267&q=80"
+        class="card-img-top"
+        alt="Campground Landscape"
+      />
+      <div class="auth-image-overlay"></div>
+      <div class="auth-image-text">
+        <i class="bi bi-person-plus-fill display-4 text-success"></i>
+        <h3 class="fw-bold mt-2 text-white">Join the Adventure</h3>
+        <p class="mb-0 text-white-50">Create an account to get started</p>
+      </div>
+    </div>
+
+    <div class="card-body p-4">
+      <form action="/register" method="POST" class="validated-form" novalidate>
+        <!-- Username Field -->
+        <div class="form-floating mb-3">
+          <input
+            class="form-control glass-input"
+            type="text"
+            id="username"
+            name="username"
+            placeholder=" "
+            autofocus
+            required
+          />
+          <label for="username">Username</label>
+          <div class="valid-feedback">Looks good!</div>
+        </div>
+
+        <!-- Email Field -->
+        <div class="form-floating mb-3">
+          <input
+            class="form-control glass-input"
+            type="email"
+            id="email"
+            name="email"
+            placeholder=" "
+            required
+          />
+          <label for="email">Email</label>
+          <div class="valid-feedback">Looks good!</div>
+        </div>
+
+        <!-- Password Field -->
+        <div class="form-floating mb-4 position-relative">
+          <input
+            class="form-control glass-input pe-5"
+            type="password"
+            id="password"
+            name="password"
+            placeholder=" "
+            required
+          />
+          <label for="password">Password</label>
+
+          <button
+            class="btn password-toggle"
+            type="button"
+            id="togglePassword"
+            aria-label="Toggle password visibility"
+          >
+            <i class="bi bi-eye-fill"></i>
+          </button>
+
+          <div class="valid-feedback">Looks good!</div>
+        </div>
+
+        <button
+          type="submit"
+          class="btn btn-success w-100 py-2 fw-bold shadow-sm hover-lift"
+        >
+          <i class="bi bi-person-check-fill me-2"></i> Register
+        </button>
+      </form>
+
+      <div class="text-center mt-4">
+        <p class="text-white-50 mb-0">
+          Already have an account?
+          <a href="/login" class="text-success text-decoration-none fw-bold"
+            >Login here</a
+          >
+        </p>
+      </div>
+    </div>
   </div>
-  <div class="mb-3">
-    <label class="form-label" for="email">Email</label>
-    <input class="form-control" type="email" id="email" name="email" required />
-    <div class="valid-feedback">Looks good!</div>
-  </div>
-  <div class="mb-3">
-    <label class="form-label" for="password">Password</label>
-    <input
-      class="form-control"
-      type="password"
-      id="password"
-      name="password"
-      required
-    />
-    <div class="valid-feedback">Looks good!</div>
-  </div>
-  <button class="btn btn-success">Register</button>
-</form>
+</div>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const togglePassword = document.querySelector("#togglePassword");
+    const password = document.querySelector("#password");
+    const toggleIcon = togglePassword.querySelector("i");
+
+    togglePassword.addEventListener("click", function () {
+      const type =
+        password.getAttribute("type") === "password" ? "text" : "password";
+      password.setAttribute("type", type);
+
+      if (type === "text") {
+        toggleIcon.classList.remove("bi-eye-fill");
+        toggleIcon.classList.add("bi-eye-slash-fill");
+      } else {
+        toggleIcon.classList.remove("bi-eye-slash-fill");
+        toggleIcon.classList.add("bi-eye-fill");
+      }
+    });
+  });
+</script>

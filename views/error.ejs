@@ -1,12 +1,30 @@
 <% layout('layouts/boilerplate') %>
 
-<div class="row">
-  <div class="col-6 offset-3">
-    <div class="alert alert-danger" role="alert">
-      <h4 class="alert-heading"><%= err.message %></h4>
-      <% if (process.env.NODE_ENV !== 'production') { %>
-      <p><%= err.stack %></p>
-      <% } %>
+<div class="row justify-content-center">
+  <div class="col-md-8 col-lg-6">
+    <div class="card shadow-sm border-0 rounded-4">
+      <div class="card-body p-5 text-center">
+        <i
+          class="bi bi-exclamation-triangle-fill text-danger display-1 mb-3"
+        ></i>
+        <h1 class="fw-bold mb-3"><%= err.statusCode || 'Error' %></h1>
+        <p class="lead text-muted mb-4"><%= err.message %></p>
+
+        <% if (process.env.NODE_ENV !== 'production' && err.stack) { %>
+        <div class="text-start bg-light p-3 rounded-3 mb-4">
+          <pre
+            class="mb-0 small text-danger"
+            style="white-space: pre-wrap; max-height: 200px; overflow-y: auto"
+          >
+<%= err.stack %></pre
+          >
+        </div>
+        <% } %>
+
+        <a href="/" class="btn btn-success rounded-pill px-4 shadow-sm">
+          <i class="bi bi-house-door-fill me-2"></i>Go Home
+        </a>
+      </div>
     </div>
   </div>
 </div>

@@ -1,8 +1,8 @@
-maptilersdk.config.apiKey = maptilerApiKey;
-
+// Initialize map with the Outdoor style (perfect for camping) and encapsulated API key
 const map = new maptilersdk.Map({
   container: "map",
-  style: maptilersdk.MapStyle.BRIGHT,
+  style: maptilersdk.MapStyle.OUTDOOR,
+  apiKey: maptilerApiKey,
   center: [-103.59179687498357, 40.66995747013945],
   zoom: 3,
 });
@@ -12,8 +12,8 @@ map.on("load", function () {
     type: "geojson",
     data: campgrounds,
     cluster: true,
-    clusterMaxZoom: 14, // Max zoom to cluster points on
-    clusterRadius: 50, // Radius of each cluster when clustering points (defaults to 50)
+    clusterMaxZoom: 14,
+    clusterRadius: 50,
   });
 
   map.addLayer({
@@ -22,14 +22,15 @@ map.on("load", function () {
     source: "campgrounds",
     filter: ["has", "point_count"],
     paint: {
+      // Use a nature-inspired color ramp for clusters
       "circle-color": [
         "step",
         ["get", "point_count"],
-        "#00BCD4",
+        "#51bbd6", // Light blue for small clusters
         10,
-        "#2196F3",
+        "#198754", // Bootstrap success green for medium
         30,
-        "#3F51B5",
+        "#0f5132", // Dark green for large clusters
       ],
       "circle-radius": ["step", ["get", "point_count"], 15, 10, 20, 30, 25],
     },
@@ -53,14 +54,14 @@ map.on("load", function () {
     source: "campgrounds",
     filter: ["!", ["has", "point_count"]],
     paint: {
-      "circle-color": "#11b4da",
-      "circle-radius": 4,
-      "circle-stroke-width": 1,
+      "circle-color": "#198754", // Match the custom marker color
+      "circle-radius": 6,
+      "circle-stroke-width": 2,
       "circle-stroke-color": "#fff",
     },
   });
 
-  // inspect a cluster on click
+  // Zoom into cluster on click
   map.on("click", "clusters", async (e) => {
     const features = map.queryRenderedFeatures(e.point, {
       layers: ["clusters"],
@@ -75,31 +76,34 @@ map.on("load", function () {
     });
   });
 
-  // When a click event occurs on a feature in
-  // the unclustered-point layer, open a popup at
-  // the location of the feature, with
-  // description HTML from its properties.
+  // Open popup on unclustered point click
   map.on("click", "unclustered-point", function (e) {
     const { popUpMarkup } = e.features[0].properties;
     const coordinates = e.features[0].geometry.coordinates.slice();
 
-    // Ensure that if the map is zoomed out such that
-    // multiple copies of the feature are visible, the
-    // popup appears over the copy being pointed to.
+    // Ensure popup stays on the correct copy of the world
     while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
       coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
     }
 
-    new maptilersdk.Popup()
+    new maptilersdk.Popup({ className: "campground-popup" })
       .setLngLat(coordinates)
       .setHTML(popUpMarkup)
       .addTo(map);
   });
 
+  // Cursor changes for BOTH clusters and unclustered points
   map.on("mouseenter", "clusters", () => {
     map.getCanvas().style.cursor = "pointer";
   });
   map.on("mouseleave", "clusters", () => {
+    map.getCanvas().style.cursor = "";
+  });
+
+  map.on("mouseenter", "unclustered-point", () => {
+    map.getCanvas().style.cursor = "pointer";
+  });
+  map.on("mouseleave", "unclustered-point", () => {
     map.getCanvas().style.cursor = "";
   });
 });
