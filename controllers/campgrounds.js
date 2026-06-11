@@ -89,8 +89,10 @@ module.exports.updateCampground = async (req, res) => {
   });
   campground.geometry = geoData.features[0].geometry;
   campground.location = geoData.features[0].place_name;
-  const imgs = req.files.map((f) => ({ url: f.path, filename: f.filename }));
-  campground.images.push(...imgs);
+  if (req.files) {
+    const imgs = req.files.map((f) => ({ url: f.path, filename: f.filename }));
+    campground.images.push(...imgs);
+  }
   await campground.save();
   if (req.body.deleteImages) {
     for (let filename of req.body.deleteImages) {

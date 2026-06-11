@@ -15,12 +15,14 @@ const LocalStrategy = require("passport-local");
 const User = require("./models/user");
 const sanitizeV5 = require("./utils/mongoSanitizeV5.js");
 const helmetConfig = require("./utils/helmetConfig");
+const { MongoStore } = require("connect-mongo");
 
 const userRoutes = require("./routes/users");
 const campgroundRoutes = require("./routes/campgrounds");
 const reviewRoutes = require("./routes/reviews");
 
-const db_uri = "mongodb://127.0.0.1:27017/yelp-camp";
+//const db_uri = process.env.DB_URI;
+const db_uri = process.env.DB_URI || "mongodb://127.0.0.1:27017/yelp-camp";
 mongoose.connect(db_uri);
 
 const db = mongoose.connection;
@@ -42,14 +44,29 @@ app.use(express.static(path.join(__dirname, "public")));
 app.use(sanitizeV5({ replaceWith: "_" }));
 app.use(helmetConfig);
 
+const secret = process.env.SECRET || "thisshouldbeabettersecret!";
+
+const store = MongoStore.create({
+  mongoUrl: db_uri,
+  touchAfter: 24 * 60 * 60,
+  crypto: {
+    secret,
+  },
+});
+
+store.on("error", function (e) {
+  console.log(e);
+});
+
 const sessionConfig = {
+  store,
   name: "session",
-  secret: "thisshouldbeabettersecret!",
+  secret,
   resave: false,
   saveUninitialized: true,
   cookie: {
     httpOnly: true,
-    // secure: true,
+    secure: process.env.NODE_ENV === "production",
     expires: Date.now() + 1000 * 60 * 60 * 24 * 7,
     maxAge: 1000 * 60 * 60 * 24 * 7,
   },
@@ -92,6 +109,7 @@ app.use((err, req, res, next) => {
   res.status(statusCode).render("error", { err });
 });
 
-app.listen(5000, () => {
-  console.log("Serving on port 5000");
+const port = process.env.PORT || 5000;
+app.listen(port, () => {
+  console.log(`Serving on port ${port}`);
 });
