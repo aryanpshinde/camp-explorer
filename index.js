@@ -104,9 +104,28 @@ app.all("/{*path}", (req, res, next) => {
 });
 
 app.use((err, req, res, next) => {
-  const { statusCode = 500 } = err;
-  if (!err.message) err.message = "Oh No, Something Went Wrong!";
-  res.status(statusCode).render("error", { err });
+  let statusCode = err.statusCode || 500;
+  let message = err.message || "Oh No, Something Went Wrong!";
+
+  if (err.name === "CastError") {
+    statusCode = 404;
+    message = "Page Not Found";
+  }
+
+  if (err.name === "ValidationError") {
+    statusCode = 400;
+    message = Object.values(err.errors)
+      .map((val) => val.message)
+      .join(", ");
+  }
+
+  const safeErr = {
+    statusCode,
+    message,
+    stack: process.env.NODE_ENV === "production" ? undefined : err.stack,
+  };
+
+  res.status(statusCode).render("error", { err: safeErr });
 });
 
 const port = process.env.PORT || 5000;

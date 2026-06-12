@@ -19,7 +19,19 @@ module.exports.register = async (req, res, next) => {
       res.redirect("/campgrounds");
     });
   } catch (e) {
-    req.flash("error", e.message);
+    if (e.name === "UserExistsError" || e.code === 11000) {
+      req.flash(
+        "error",
+        "An account with that username or email already exists",
+      );
+    } else {
+      const errorMessage =
+        process.env.NODE_ENV === "production"
+          ? "Oops! Something went wrong on our end. Please try again."
+          : e.message;
+
+      req.flash("error", errorMessage);
+    }
     res.redirect("/register");
   }
 };
